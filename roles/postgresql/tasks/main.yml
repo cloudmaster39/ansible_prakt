@@ -1,0 +1,63 @@
+# Create user in postgresql
+- name: Install system dependencies
+  ansible.builtin.yum:
+    name:
+      - postgresql
+      - postgresql-server
+      - postgresql-devel
+    state: present
+    update_cache: true
+
+- name: Check if PostgreSQL is initialized
+  ansible.builtin.stat:
+    path: "/var/lib/pgsql/data/pg_hba.conf"
+  register: postgres_data
+
+- name: Initialize PostgreSQL
+  ansible.builtin.shell: "postgresql-setup initdb"
+  when: not postgres_data.stat.exists
+
+- name: Start and enable service
+  ansible.builtin.service:
+    name: postgresql
+    state: started
+    enabled: true
+
+- name: "Create app database"
+  postgresql_db:
+    state: present
+    name: "{{ db_name }}"
+  become_user: postgres
+
+- name: Create database user
+  become_user: postgres
+  postgresql_user:
+    state: present
+    name: "{{ db_user }}"
+    password: "{{ db_password }}"
+    role_attr_flags: SUPERUSER
+
+- name: "Grant db user access to app db"
+  postgresql_privs:
+    type: database
+    database: "{{ db_name }}"
+    roles: "{{ db_user }}"
+    grant_option: no
+    privs: all
+  become_user: postgres
+
+- name: "Allow md5 connection for the db user"
+  postgresql_pg_hba:
+    dest: "~/data/pg_hba.conf"
+    contype: host
+    databases: all
+    address: 127.0.0.1/32
+    method: md5
+    users: "{{ db_user }}"
+    create: true
+  become_user: postgres
+
+- name: restart postgres
+  service:
+    name: postgresql
+    state: restarted

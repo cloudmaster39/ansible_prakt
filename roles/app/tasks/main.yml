@@ -1,0 +1,70 @@
+- name: "Enable Ruby"
+  ansible.builtin.copy:
+    src: files/rh-ruby26.sh
+    dest: /etc/profile.d/rh-ruby26.sh
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Install bundler
+  shell: |
+    source /etc/profile.d/rh-ruby25.sh
+    gem install bundler -v {{ bundler_version }}
+  args:
+    executable: /bin/bash
+
+- name: Create a directory if it does not exist
+  ansible.builtin.file:
+    path: /var/www/app
+    state: directory
+    owner: root
+
+- name: Git clone
+  ansible.builtin.git:
+    repo: 'https://{{ git_user | urlencode }}:{{ git_pass | urlencode }}@gitlab.slurm.io/edu/xpaste_practicum.git'
+    dest: /var/www/app
+
+- name: Create a symbolic link
+  ansible.builtin.file:
+    src: '{{ item.src }}'
+    dest: '{{ item.dest }}'
+    state: link
+  loop:
+    - { src: /var/www/app/app/assets/images, dest: /var/www/app/public/images }
+    - { src: /var/www/app/app/assets/javascripts, dest: /var/www/app/public/javascripts }
+    - { src: /var/www/app/app/assets/stylesheets, dest: /var/www/app/public/stylesheets }
+
+- name: Build nokogiri
+  shell: | 
+    bundle config build.nokogiri --use-system-libraries
+  args:
+    executable: /bin/bash
+
+
+- name: Install nokogiri
+  shell: | 
+    gem install nokogiri -v {{ nokogiri_version }} --source 'https://rubygems.org/'
+  args:
+    executable: /bin/bash
+
+- name: Install app
+  shell: |
+    cd /var/www/app
+    bundle install --clean --no-cache --without development
+  args:
+    executable: /bin/bash
+  register: result
+  failed_when:
+    - result.rc != 0
+    - '"Bundle complete" not in result.stdout'
+
+- name: Copy service file
+  ansible.builtin.template:
+    src: service.service.j2
+    dest: /etc/systemd/system/{{ app_name }}.service
+    mode: 0644
+
+- name: "Start service"
+  service:
+    name: "{{ app_name }}"
+    state: started

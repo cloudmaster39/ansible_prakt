@@ -1,0 +1,9 @@
+all:
+  children:
+    servers:
+      hosts:
+        co7:
+          ansible_host: 10.10.10.10
+          ansible_user: root
+          ansible_password: root_pass_here
+          ansible_ssh_extra_args: "-o IdentitiesOnly=yes"

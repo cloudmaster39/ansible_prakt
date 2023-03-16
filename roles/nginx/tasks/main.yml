@@ -1,0 +1,40 @@
+- name: Configure NGINX
+  ansible.builtin.include_role:
+    name: nginxinc.nginx_config
+  vars:
+    nginx_branch: stable
+    nginx_config_selinux: true
+
+- name: Copy a nginx.conf file on the remote machine
+  ansible.builtin.copy:
+    src: /var/www/app/config/nginx.conf
+    dest: /etc/nginx/nginx.conf
+    remote_src: yes
+
+- name: Replace a localhost entry searching for a literal string to avoid escaping
+  ansible.builtin.replace:
+    path: /etc/nginx/nginx.conf
+    regexp: '\/app\/public'
+    replace: '/var/www/app/public'
+
+
+- name: "Reload nginx"
+  service:
+    name: nginx
+    state: reloaded
+
+- name: permit traffic in default zone for https service
+  ansible.posix.firewalld:
+    service: "{{ item }}"
+    permanent: true
+    state: enabled
+    immediate: true
+  with_items:
+    - http
+    - https
+
+- name: SELinux enable httpd
+  shell: |
+    semanage permissive -a httpd_t
+  args:
+    executable: /bin/bash
