@@ -1,0 +1,13 @@
+---
+nokogiri_version: 1.8.2
+bundler_version: 1.16.2
+app_name: slurm-app
+db_host: 127.0.0.1
+db_port: 5432
+secret_key_base: xxxxxxxxx
+rails_env: production
+db_name: slurm_db
+db_user: app
+db_password: app_pass
+git_user: git_user_here
+git_pass: git_pass_here

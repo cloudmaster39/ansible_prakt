@@ -1,0 +1,52 @@
+- name: "Install epel-release yum"
+  ansible.builtin.yum:
+    name: epel-release
+    update_cache: true
+    state: latest
+
+- name: "Install Ruby repos"
+  ansible.builtin.yum:
+    name:
+      - centos-release-scl-rh
+      - centos-release-scl
+    update_cache: true
+    state: latest
+
+- name: "Install Ruby 2.6.9"
+  ansible.builtin.yum:
+    name:
+      - rh-ruby26
+      - rh-ruby26-ruby-devel
+    update_cache: true
+    state: latest
+    enablerepo:
+      - centos-sclo-rh
+
+- name: Install the 'Development tools' package group
+  ansible.builtin.yum:
+    name: "@Development tools"
+    state: present
+    update_cache: true
+
+- name: Install system dependencies
+  ansible.builtin.yum:
+    name:
+      - git
+      - mc
+      - nginx
+      - libxml2-devel
+      - readline-devel
+      - libxml2
+      - libxslt
+      - nodejs
+    state: present
+    update_cache: true
+
+- name: Install python deps
+  ansible.builtin.yum:
+    name:
+      - python-psycopg2
+      - python-ipaddress
+      - policycoreutils-python
+    state: latest
+    update_cache: true
