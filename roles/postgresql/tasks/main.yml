@@ -56,8 +56,8 @@
     users: "{{ db_user }}"
     create: true
   become_user: postgres
+  notify: restart postgresql
 
-- name: restart postgres
-  service:
-    name: postgresql
-    state: restarted
+- name: Force all notified handlers to run at this point, not waiting for normal sync points
+  ansible.builtin.meta: flush_handlers
+
